@@ -1,46 +1,72 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { StatusBar } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
-type ButtonProps = {
-  title: string
-}
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
+
+import { Background } from './src/components/Background';
+import { Loading } from './src/components/Loading';
+import { Routes } from './src/routes';
+import { Subscription } from 'expo-modules-core';
+
+import './src/services/notificationConfigs';
+import { getPushNotificationToken } from './src/services/getPushNotificationToken';
 
 export default function App() {
+  const getNotificationListener = useRef<Subscription>();
+  const responseNotificationListener = useRef<Subscription>();
+
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_900Black,
+  });
+
+  useEffect(() => {
+    getPushNotificationToken();
+  }, []);
+
+  useEffect(() => {
+    getNotificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log(notification);
+      });
+
+    responseNotificationListener.current =
+      Notifications.addNotificationResponseReceivedListener((notification) => {
+        console.log(notification);
+      });
+
+    return () => {
+      if (
+        getNotificationListener.current &&
+        responseNotificationListener.current
+      ) {
+        Notifications.removeNotificationSubscription(
+          getNotificationListener.current,
+        );
+        Notifications.removeNotificationSubscription(
+          responseNotificationListener.current,
+        );
+      }
+    };
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-      <Text style={styles.title}>Hello world in React Native!</Text>
-      <Button title='Teste'/>
-      <Button title='Novo Teste'/>
-    </View>
+    <Background>
+      <StatusBar
+        barStyle='light-content'
+        backgroundColor='transparent'
+        translucent
+      ></StatusBar>
+      {fontsLoaded ? <Routes></Routes> : <Loading></Loading>}
+    </Background>
   );
 }
-
-const Button = ({title}: ButtonProps)=>{
-  return (
-    <TouchableOpacity>
-      <Text style={styles.titleYellow}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  )
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title:{
-    color: 'red',
-    fontSize: 22
-  },
-  titleYellow:{
-    padding: 20,
-    backgroundColor: 'green',
-    color: 'yellow',
-    fontSize: 26
-  }
-});
